@@ -8,13 +8,26 @@ source env.list
 source env-distrib.list
 
 DIR_TEST="/workspace/test_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}"
+
+DIR_DOCKER="/workspace/docker-ce-${DOCKER_VERS}"                                                                      │
+DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}"
+
 PATH_DOCKERFILE="${PATH_SCRIPTS}/test"
 PATH_TEST_ERRORS="${DIR_TEST}/errors.txt"
+
+DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}"
+
+DIR_TEST_COS="${DIR_COS_BUCKET}/test_docker-ce-${DOCKER_VERS}_containerd-${CONTAINERD_VERS}"
 
 # Create the test directory
 if ! test -d ${DIR_TEST}
 then
   mkdir -p "${DIR_TEST}"
+fi
+
+if ! test -d ${DIR_TEST_COS}
+then
+  mkdir -p "${DIR_TEST_COS}"
 fi
 
 # Create the errors.txt file where we will put a summary of the test logs
@@ -62,16 +75,16 @@ do
 
     echo "### # Copying the packages and the dockerfile for ${DISTRO} # ###" 2>&1 | tee -a ${LOG}
     # Copy the docker-ce packages
-    cp /workspace/docker-ce-${DOCKER_VERS}/bundles-ce-${DISTRO_NAME}-${DISTRO_VERS}-ppc64*.tar.gz .
+    cp ${DIR_DOCKER}/bundles-ce-${DISTRO_NAME}-${DISTRO_VERS}-ppc64*.tar.gz .
     # Copy the containerd packages (we have two different configurations depending on the package type)
     CONTAINERD_VERS_2=$(echo ${CONTAINERD_VERS} | cut -d'v' -f2)
     if [[ ${PACKTYPE} == "DEBS" ]]
     then
       # For the debian packages, we don't want the dbgsym package
-      cp /workspace/containerd-${CONTAINERD_VERS}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io_${CONTAINERD_VERS_2}*_ppc64*.deb .
+      cp ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io_${CONTAINERD_VERS_2}*_ppc64*.deb .
     elif [[ ${PACKTYPE} == "RPMS" ]]
     then
-      cp /workspace/containerd-${CONTAINERD_VERS}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io-${CONTAINERD_VERS_2}*.ppc64*.rpm .
+      cp ${DIR_CONTAINERD}/${DISTRO_NAME}/${DISTRO_VERS}/ppc64*/containerd.io-${CONTAINERD_VERS_2}*.ppc64*.rpm .
     fi
 
     # Copy the Dockerfile
@@ -101,7 +114,12 @@ do
 
       # Running the tests
       echo "### ### Running the tests from the container: ${CONT_NAME} ### ###" 2>&1 | tee -a ${LOG}
-      docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
+      if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
+      then
+        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
+      else
+        docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env DISTRO_NAME --env PATH_SCRIPTS --env LOG --privileged --name ${CONT_NAME} ${IMAGE_NAME}
+      fi
 
       status_code="$(docker container wait $CONT_NAME)"
       if [[ ${status_code} -ne 0 ]]; then
@@ -136,7 +154,7 @@ do
 
     echo "### # Copying the static packages and the dockerfile for ${DISTRO} # ###" 2>&1 | tee -a ${LOG}
     # Copy the static binaries
-    cp /workspace/docker-ce-${DOCKER_VERS}/docker-ppc64le.tgz .
+    cp ${DIR_DOCKER}/docker-ppc64le.tgz .
     # Copy the Dockerfile
     cp ${PATH_DOCKERFILE}-static-${PACKTYPE}/Dockerfile .
     # Copy the test_launch.sh
@@ -162,7 +180,12 @@ do
 
       # Running the tests
       echo "### ### Running the tests from the container: ${CONT_NAME_STATIC} ### ###" 2>&1 | tee -a ${LOG}
-      docker run --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name $CONT_NAME_STATIC ${IMAGE_NAME_STATIC}
+      if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
+      then
+        docker run --env DOCKER_SECRET_AUTH --env DISTRO_NAME --env PATH_SCRIPTS --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name $CONT_NAME_STATIC ${IMAGE_NAME_STATIC}
+      else
+        docker run --env DISTRO_NAME --env PATH_SCRIPTS --env LOG -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --privileged --name $CONT_NAME_STATIC ${IMAGE_NAME_STATIC}
+      fi
 
       status_code="$(docker container wait $CONT_NAME_STATIC)"
       if [[ ${status_code} -ne 0 ]]; then

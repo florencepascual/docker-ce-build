@@ -123,7 +123,12 @@ echo "= Building static binaries =" 2>&1 | tee -a ${LOG}
 pushd docker-ce-packaging/static
 
 CONT_NAME=docker-build-static
-docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env PATH_SCRIPTS --env LOG --env DOCKER_SECRET_AUTH --privileged --name ${CONT_NAME} quay.io/powercloud/docker-ce-build ${PATH_SCRIPTS}/build_static.sh
+if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
+then
+  docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env PATH_SCRIPTS --env LOG --env DOCKER_SECRET_AUTH --privileged --name ${CONT_NAME} quay.io/powercloud/docker-ce-build ${PATH_SCRIPTS}/build_static.sh
+else
+  docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} --env PATH_SCRIPTS --env LOG --privileged --name ${CONT_NAME} quay.io/powercloud/docker-ce-build ${PATH_SCRIPTS}/build_static.sh
+fi
 
 status_code="$(docker container wait ${CONT_NAME})"
 if [[ ${status_code} -ne 0 ]]; then
