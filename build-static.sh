@@ -1,27 +1,31 @@
 #!/bin/bash
 # Script building the static docker binaries in a docker container
 
-set -ue
+set -u
 
 set -o allexport
 source env.list
 
 source ${PATH_SCRIPTS}/dockerd-starting.sh
 
+DIR_LOGS="/workspace/logs"
+STATIC_LOG="static.log"
+
+
 # Get the latest version of runc
 if [[ ! -z ${RUNC_VERS} ]]
 then
-  echo "~ Get the latest version of runc ~" 2>&1 | tee -a ${LOG}
+  echo "~ Get the latest version of runc ~"
   RUNC_VERS=$(eval "git ls-remote --refs --tags https://github.com/opencontainers/runc.git | cut --delimiter='/' --fields=3 | sort --version-sort | tail --lines=1")
-  echo "RUNC_VERS = ${RUNC_VERS}" 2>&1 | tee -a ${LOG}
+  echo "RUNC_VERS = ${RUNC_VERS}"
 fi
 
-echo "~~ Building static binaries ~~" 2>&1 | tee -a ${LOG}
+echo "~~ Building static binaries ~~"
 pushd docker-ce-packaging/static
-VERSION=${DOCKER_VERS} CONTAINERD_VERSION=${CONTAINERD_VERS} RUNC_VERSION=${RUNC_VERS} make static-linux
+VERSION=${DOCKER_VERS} CONTAINERD_VERSION=${CONTAINERD_VERS} RUNC_VERSION=${RUNC_VERS} make static-linux > ${DIR_LOGS}/${STATIC_LOG} 2>&1
 mkdir build/linux/tmp
 
-echo "~~~ Renaming the static binaries ~~~" 2>&1 | tee -a ${LOG}
+echo "~~~ Renaming the static binaries ~~~"
 # Copy the packages in a tmp directory
 cp build/linux/*.tgz build/linux/tmp
 popd
@@ -40,7 +44,7 @@ ls docker-ce-packaging/static/build/linux/tmp/*.tgz
 if [[ $? -ne 0 ]]
 then
   # No static binaries built
-  echo "Static binaries not built or not renamed" 2>&1 | tee -a ${LOG}
+  echo "Static binaries not built or not renamed"
   exit 1
 else
   # Static binaries built
@@ -48,10 +52,10 @@ else
   if [[ $? -ne 0 ]]
   then
     # Static binaries built but not renamed
-    echo "Static binaries built but not renamed" 2>&1 | tee -a ${LOG}
+    echo "Static binaries built but not renamed"
     exit 1
   fi
   # Static binaries built and renamed
-  echo "Static binaries built and renamed" 2>&1 | tee -a ${LOG}
+  echo "Static binaries built and renamed"
   exit 0
 fi
