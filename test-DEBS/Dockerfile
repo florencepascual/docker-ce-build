@@ -37,7 +37,7 @@ RUN apt-get install -y --no-install-recommends \
 
 COPY bundles-*.tar.gz /workspace/
 COPY *.deb /workspace/
-COPY test_launch.sh /usr/local/bin/test_launch.sh
+COPY test-launch.sh /usr/local/bin/test-launch.sh
 
 RUN set -eux; \
         tar -xvzf bundles-*.tar.gz --wildcards  --strip-components 4 '*.deb' &&\
@@ -65,7 +65,7 @@ RUN set -eux; \
         wget -O /usr/local/bin/dockerd-entrypoint.sh "https://raw.githubusercontent.com/docker-library/docker/${DOCKERD_COMMIT}/20.10/dind/dockerd-entrypoint.sh"; \
         chmod +x /usr/local/bin/dind; \
         chmod +x /usr/local/bin/dockerd-entrypoint.sh; \
-        chmod +x /usr/local/bin/test_launch.sh;
+        chmod +x /usr/local/bin/test-launch.sh;
 
 RUN set -eux; \
 	url="https://storage.googleapis.com/golang/go${GOLANG_VERSION}.linux-ppc64le.tar.gz";\
@@ -77,5 +77,5 @@ RUN set -eux; \
 VOLUME /var/lib/docker
 EXPOSE 2375 2376
 
-ENTRYPOINT ["/usr/local/bin/test_launch.sh"]
+ENTRYPOINT ["/usr/local/bin/test-launch.sh"]
 CMD []

@@ -32,7 +32,7 @@ RUN set -eux; \
 	fi
 
 COPY docker-ppc64le.tgz /workspace
-COPY test_launch.sh /usr/local/bin/test_launch.sh
+COPY test-launch.sh /usr/local/bin/test-launch.sh
 
 RUN set -eux; \
 	tar --extract \
@@ -65,7 +65,7 @@ RUN set -eux; \
         wget -O /usr/local/bin/dockerd-entrypoint.sh "https://raw.githubusercontent.com/docker-library/docker/${DOCKERD_COMMIT}/20.10/dind/dockerd-entrypoint.sh"; \
 	chmod +x /usr/local/bin/dind; \
         chmod +x /usr/local/bin/dockerd-entrypoint.sh; \
-	chmod +x /usr/local/bin/test_launch.sh;
+	chmod +x /usr/local/bin/test-launch.sh;
 
 # https://github.com/docker-library/docker/pull/166
 #   dockerd-entrypoint.sh uses DOCKER_TLS_CERTDIR for auto-generating TLS certificates
@@ -79,5 +79,5 @@ RUN mkdir /certs /certs/client && chmod 1777 /certs /certs/client
 VOLUME /var/lib/docker
 EXPOSE 2375 2376
 
-ENTRYPOINT ["/usr/local/bin/test_launch.sh"]
+ENTRYPOINT ["/usr/local/bin/test-launch.sh"]
 CMD []
