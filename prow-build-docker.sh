@@ -7,7 +7,7 @@ SECONDS=0
 PATH_SCRIPTS="/home/prow/go/src/github.com/ppc64le-cloud/docker-ce-build"
 DATE=`date +%d%m%y-%H%M`
 
-echo DATE=\"${DATE}\" 2>&1 | tee ${PATH_SCRIPTS}/date.list
+echo DATE=\"${DATE}\" 2>&1 | tee ${PATH_SCRIPTS}/env/date.list
 
 export DATE
 export PATH_SCRIPTS

@@ -20,9 +20,6 @@ checkDirectory() {
 DIR_COS_BUCKET="/mnt/s3_ppc64le-docker/prow-docker/build-docker-${DOCKER_VERS}_${DATE}"
 checkDirectory ${DIR_COS_BUCKET}
 
-DIR_DOCKER="/workspace/docker-ce-${DOCKER_VERS}_${DATE}"
-DIR_DOCKER_COS="${DIR_COS_BUCKET}/docker-ce-${DOCKER_VERS}"
-
 if [[ ${CONTAINERD_BUILD} != "0" ]]
 then
   DIR_CONTAINERD="/workspace/containerd-${CONTAINERD_VERS}_${DATE}"
@@ -129,7 +126,7 @@ done
 after=$SECONDS
 duration=$(expr $after - $before) && echo "DURATION TOTAL CONTAINERD : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed."
 
-# Build containerd fo the distros in ${PATH_DISTROS_MISSING}
+# Build containerd for the distros in ${PATH_DISTROS_MISSING}
 if [[ ${CONTAINERD_BUILD} == "0" ]] && test -f ${PATH_DISTROS_MISSING}
 then
   echo "= Building containerd - distros missing ="
