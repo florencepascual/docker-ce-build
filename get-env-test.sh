@@ -11,7 +11,7 @@ URL_COS_PRIVATE="https://s3.us-south.cloud-object-storage.appdomain.cloud"
 
 PATH_DOCKERTEST="/workspace/test/src/github.ibm.com/powercloud"
 
-FILE_DATE="${PATH_SCRIPTS}/date.list"
+FILE_DATE="${PATH_SCRIPTS}/env/date.list"
 
 # Copy the date file
 cp ${FILE_DATE} /workspace/date.list
@@ -37,15 +37,13 @@ fi
 mkdir -p ${PATH_DOCKERTEST}
 cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/dockertest ${PATH_DOCKERTEST}/dockertest
 
-# Get the containerd directory if we don't want to build containerd
-if [[ ${CONTAINERD_BUILD} = "0" ]]
-then
-    mkdir /workspace/containerd-${CONTAINERD_VERS}_${DATE}
-    cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/containerd-${CONTAINERD_VERS} /workspace/containerd-${CONTAINERD_VERS}_${DATE}
-fi
-# Get the docker-ce directory
+# Get the docker-ce packages
 mkdir /workspace/docker-ce-${DOCKER_VERS}_${DATE}
 cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/build-docker-${DOCKER_VERS}_${DATE}/docker-ce-${DOCKER_VERS}/* /workspace/docker-ce-${DOCKER_VERS}_${DATE}
+
+# Get the containerd packages
+mkdir /workspace/containerd-${CONTAINERD_VERS}_${DATE}
+cp -r ${PATH_COS}/s3_${COS_BUCKET_PRIVATE}/prow-docker/build-docker-${DOCKER_VERS}_${DATE}/containerd-${CONTAINERD_VERS} /workspace/containerd-${CONTAINERD_VERS}_${DATE}
 
 # Check if we have the dockertest
 if ! test -d ${PATH_DOCKERTEST}/dockertest
