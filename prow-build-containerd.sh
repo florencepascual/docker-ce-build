@@ -41,7 +41,7 @@ else
 
     # Build containerd and static packages
     echo "*** Build containerd and static packages ***"
-    ${PATH_SCRIPTS}/build-containerd-static.sh
+    ${PATH_SCRIPTS}/build-containerd.sh
 
     # Test the packages
     echo "*** * Tests * ***"
