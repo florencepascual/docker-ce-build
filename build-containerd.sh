@@ -39,8 +39,6 @@ checkDirectory ${DIR_LOGS_COS}
 
 PATH_DISTROS_MISSING="/workspace/distros-missing.txt"
 
-STATIC_LOG="static.log"
-
 # Function to build containerd packages
 # $1 : distro
 buildContainerd() {
@@ -152,66 +150,6 @@ then
   done < ${PATH_DISTROS_MISSING}
 fi
 
-echo "= Building static binaries ="
-
-before_build=$SECONDS
-
-# Cloning docker-ce-packaging
-mkdir docker-ce-packaging
-pushd docker-ce-packaging
-git init
-git remote add origin https://github.com/docker/docker-ce-packaging.git
-git fetch origin ${DOCKER_PACKAGING_REF}
-git checkout FETCH_HEAD
-
-make REF=${DOCKER_VERS} checkout
-popd
-
-cd /workspace/docker-ce-packaging/static
-
-CONT_NAME=docker-build-static
-if [[ ! -z ${DOCKER_SECRET_AUTH+z} ]]
-then
-  docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --env PATH_SCRIPTS --env DOCKER_SECRET_AUTH --privileged --name ${CONT_NAME} quay.io/powercloud/docker-ce-build ${PATH_SCRIPTS}/build-static.sh
-else
-  docker run -d -v /workspace:/workspace -v ${PATH_SCRIPTS}:${PATH_SCRIPTS} -v ${ARTIFACTS}:${ARTIFACTS} --env PATH_SCRIPTS --privileged --name ${CONT_NAME} quay.io/powercloud/docker-ce-build ${PATH_SCRIPTS}/build-static.sh
-fi
-
-status_code="$(docker container wait ${CONT_NAME})"
-if [[ ${status_code} -ne 0 ]]; then
-  echo "The static binaries build failed. See details from '${STATIC_LOG}'"
-  docker logs ${CONT_NAME}
-else
-  after_build=$SECONDS
-  duration_build=$(expr $after_build - $before_build)
-  echo "DURATION BUILD STATIC : $(($duration_build / 60)) minutes and $(($duration_build % 60)) seconds elapsed."
-  docker logs ${CONT_NAME}
-
-  # Check if the static packages have been built
-  if test -f build/linux/tmp/docker-ppc64le.tgz
-  then
-    echo "Static binaries built"
-
-    echo "== Copying static packages to ${DIR_DOCKER} =="
-    cp build/linux/tmp/*.tgz ${DIR_DOCKER}
-
-    echo "=== Copying static packages to ${DIR_DOCKER_COS} ==="
-    cp build/linux/tmp/*.tgz ${DIR_DOCKER_COS}
-
-    echo "==== Copying log to ${DIR_LOGS_COS} ===="
-    cp ${DIR_LOGS}/${STATIC_LOG} ${DIR_LOGS_COS}/${STATIC_LOG}
-
-    # Checking everything has been copied
-    ls -f ${DIR_DOCKER}/*.tgz && ls -f ${DIR_DOCKER_COS}/*.tgz && ls -f ${DIR_LOGS_COS}/${STATIC_LOG}
-    if [[ $? -eq 0 ]]
-    then
-      echo "The static binaries were copied."
-    else
-      echo "The static binaries were not copied."
-    fi
-  fi
-fi
-
 cd /workspace
 
 # Check if the containerd packages have been built
@@ -220,31 +158,9 @@ if [[ $? -ne 0 ]]
 then
   # No containerd packages built
   echo "No packages built for containerd"
-  BOOL_CONTAINERD=0
-else
-  # Containerd packages built
-  BOOL_CONTAINERD=1
-fi
-
-# Check if the static packages have been built
-ls -f ${DIR_DOCKER}/docker-ppc64le.tgz
-if [[ $? -ne 0 ]]
-then
-  # No static packages built
-  echo "No static packages built"
-  BOOL_STATIC=0
-else
-  # Containerd packages built
-  BOOL_STATIC=1
-fi
-
-if [[ ${BOOL_STATIC} -eq 0 ]] || [[ ${BOOL_CONTAINERD} -eq 0 ]]
-then
-  # There are no containerd packages built and no static packages built
-  echo "No containerd packages built nor static packages built"
   exit 1
-elif [[ ${BOOL_STATIC} -eq 1 ]] && [[ ${BOOL_CONTAINERD} -eq 1 ]]
-then
-  # There are containerd packages built and static packages built
-  echo "All packages built"
+else
+  # Containerd packages built
+  echo "Packages built for containerd"
+  exit 0
 fi
